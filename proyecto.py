@@ -18,7 +18,6 @@ def capturar_imagen(entry_codigo, lbl_imagen_destino, entry_nombre):
         messagebox.showerror("Error", "No se pudo abrir la cámara.")
         return
 
-    codigo_barras = None
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -94,8 +93,10 @@ def exportar_excel(lista):
     df.to_excel(file_path, index=False)
     messagebox.showinfo("Éxito", f"Datos exportados a {file_path}")
 
-productos = []
-ventas = []
+def on_codigo_ingresado(event, entry_codigo, entry_nombre):
+    codigo = entry_codigo.get().strip()
+    if codigo:
+        entry_nombre.focus()
 
 def crear_interfaz_registro(titulo, lista):
     ventana = tk.Toplevel(root)
@@ -113,6 +114,8 @@ def crear_interfaz_registro(titulo, lista):
         entry = tk.Entry(frame)
         entry.grid(row=i, column=1, padx=10, pady=5)
         entrys.append(entry)
+    
+    entrys[3].bind("<Return>", lambda event: on_codigo_ingresado(event, entrys[3], entrys[0]))
     
     lbl_imagen = tk.Label(frame, bg="#e6f7ff")
     lbl_imagen.grid(row=5, column=0, columnspan=2, pady=10)
@@ -134,6 +137,9 @@ root.title("MercaDGL")
 root.geometry("400x500")
 root.configure(bg="#e6f7ff")
 
+productos = []
+ventas = []
+
 frame_main = tk.Frame(root, bg="#e6f7ff")
 frame_main.pack(expand=True)
 
@@ -141,4 +147,3 @@ tk.Button(frame_main, text="Registro de Productos", command=abrir_registro_produ
 tk.Button(frame_main, text="Registro de Ventas", command=abrir_registro_ventas).pack(pady=10)
 
 root.mainloop()
-
