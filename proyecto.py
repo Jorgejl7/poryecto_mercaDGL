@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, simpledialog  # Importar simpledialog
 from tkinter import ttk
 from PIL import Image, ImageTk
 import cv2
@@ -156,7 +156,7 @@ def crear_interfaz_registro(titulo, lista):
     tk.Button(frame, text="Exportar a Excel", command=lambda: exportar_excel(lista)).grid(row=7, column=1, padx=5, pady=10)
     
     # Agregar el botón "Historial"
-    tk.Button(frame, text="Historial", command=lambda: mostrar_historial(lista, "Ventas")).grid(row=8, column=0, columnspan=2, pady=10)
+    tk.Button(frame, text="Historial", command=lambda: mostrar_historial(lista, "Productos" if titulo == "Registro de Productos MercaDGL" else "Ventas")).grid(row=8, column=0, columnspan=2, pady=10)
     
     tk.Button(frame, text="Cerrar", command=ventana.destroy).grid(row=9, column=0, columnspan=2, pady=10)
 
@@ -164,14 +164,15 @@ def mostrar_historial(lista, tipo="Productos"):
     # Crear una ventana para mostrar el historial
     historial_ventana = tk.Toplevel(root)
     historial_ventana.title(f"Historial de {tipo}")
-    historial_ventana.geometry("600x400")
+    historial_ventana.geometry("800x500")
+    historial_ventana.configure(bg="#f0f8ff")
     
     # Crear un frame para contener la tabla y los scrollbars
-    frame_historial = tk.Frame(historial_ventana)
+    frame_historial = tk.Frame(historial_ventana, bg="#f0f8ff")
     frame_historial.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
     
     # Crear un Treeview para mostrar la tabla
-    treeview = ttk.Treeview(frame_historial, columns=("Nombre", "Cantidad", "Precio", "Fecha", "Código"), show="headings")
+    treeview = ttk.Treeview(frame_historial, columns=("Nombre", "Cantidad", "Precio", "Fecha", "Código"), show="headings", height=15)
     treeview.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     
     # Crear scrollbar vertical
@@ -180,23 +181,84 @@ def mostrar_historial(lista, tipo="Productos"):
     treeview.configure(yscrollcommand=scrollbar.set)
     
     # Definir las columnas
-    treeview.heading("Nombre", text="Nombre Producto")
+    treeview.heading("Nombre", text="Nombre Producto" if tipo == "Productos" else "Nombre Venta")
     treeview.heading("Cantidad", text="Cantidad")
     treeview.heading("Precio", text="Precio (Q)")
     treeview.heading("Fecha", text="Fecha")
     treeview.heading("Código", text="Código de Barras")
     
     # Definir el tamaño de las columnas
-    treeview.column("Nombre", width=180, anchor="center")
-    treeview.column("Cantidad", width=80, anchor="center")
-    treeview.column("Precio", width=100, anchor="center")
+    treeview.column("Nombre", width=220, anchor="center")
+    treeview.column("Cantidad", width=100, anchor="center")
+    treeview.column("Precio", width=120, anchor="center")
     treeview.column("Fecha", width=140, anchor="center")
     treeview.column("Código", width=120, anchor="center")
     
     # Agregar los datos al Treeview
-    for producto in lista:
-        treeview.insert("", tk.END, values=(producto[0], producto[1], producto[2], producto[3], producto[4]))
+    for registro in lista:
+        treeview.insert("", tk.END, values=(registro[0], registro[1], registro[2], registro[3], registro[4]))
 
+    # Estilo para filas alternas (par e impar)
+    def style_treeview():
+        for i, row in enumerate(treeview.get_children()):
+            if i % 2 == 0:
+                treeview.item(row, tags='even')
+            else:
+                treeview.item(row, tags='odd')
+        
+        treeview.tag_configure('even', background="#e6f7ff")
+        treeview.tag_configure('odd', background="#ffffff")
+
+    style_treeview()
+
+    def modificar_registro():
+        selected_item = treeview.selection()
+        if not selected_item:
+            messagebox.showwarning("Advertencia", "Selecciona un registro para modificar.")
+            return
+        
+        item = treeview.item(selected_item)
+        values = item['values']
+        
+        # Solicitar nuevo nombre, cantidad y precio
+        nuevo_nombre = simpledialog.askstring("Modificar Nombre", "Nuevo nombre del producto:", initialvalue=values[0])
+        if not nuevo_nombre:
+            return
+        
+        nueva_cantidad = simpledialog.askinteger("Modificar Cantidad", "Nueva cantidad:", initialvalue=int(values[1]))
+        if nueva_cantidad is None:
+            return
+        
+        nuevo_precio = simpledialog.askfloat("Modificar Precio", "Nuevo precio:", initialvalue=float(values[2][1:]))
+        if nuevo_precio is None:
+            return
+        
+        lista[lista.index(values)] = [nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], values[4]]
+        treeview.item(selected_item, values=(nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], values[4]))
+        messagebox.showinfo("Éxito", "Registro modificado correctamente.")
+
+    def eliminar_registro():
+        selected_item = treeview.selection()
+        if not selected_item:
+            messagebox.showwarning("Advertencia", "Selecciona un registro para eliminar.")
+            return
+        
+        item = treeview.item(selected_item)
+        values = item['values']
+        lista.remove(values)
+        treeview.delete(selected_item)
+        messagebox.showinfo("Éxito", "Registro eliminado correctamente.")
+    
+    def guardar_historial():
+        # Guardar los cambios en la lista y cerrar la ventana de historial
+        historial_ventana.destroy()
+        messagebox.showinfo("Éxito", "Cambios guardados correctamente.")
+    
+    # Agregar botones de acción
+    tk.Button(historial_ventana, text="Modificar", command=modificar_registro).pack(pady=10)
+    tk.Button(historial_ventana, text="Eliminar", command=eliminar_registro).pack(pady=10)
+    tk.Button(historial_ventana, text="Guardar Historial", command=guardar_historial).pack(pady=10)
+    
 def abrir_registro_productos():
     crear_interfaz_registro("Registro de Productos MercaDGL", productos)
 
