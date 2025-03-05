@@ -6,7 +6,7 @@ import cv2
 import pandas as pd
 import datetime
 from pyzbar.pyzbar import decode
-from openpyxl import load_workbook
+from openpyxl import load_workbook # noqa: F401
 from openpyxl.styles import Alignment
 
 def cargar_imagen(entry_codigo, lbl_imagen_destino, entry_nombre):
@@ -228,7 +228,7 @@ def mostrar_historial(lista, tipo="Productos"):
         if nueva_cantidad is None:
             return
         
-        nuevo_precio = simpledialog.askfloat("Modificar Precio", "Nuevo precio:", initialvalue=float(values[2][1:]))  # Aquí estaba el error
+        nuevo_precio = simpledialog.askfloat("Modificar Precio", "Nuevo precio:", initialvalue=float(values[2][1:]))  
         if nuevo_precio is None:
             return
         
@@ -249,14 +249,14 @@ def mostrar_historial(lista, tipo="Productos"):
         messagebox.showinfo("Éxito", "Registro eliminado correctamente.")
     
     def guardar_historial():
-        # Guardar los cambios en la lista y cerrar la ventana de historial
+        # Cambiado para que solo cierre la ventana sin eliminar o modificar nada
         historial_ventana.destroy()
-        messagebox.showinfo("Éxito", "Cambios guardados correctamente.")
+    
     
     # Agregar botones de acción
     tk.Button(historial_ventana, text="Modificar", command=modificar_registro).pack(pady=10)
     tk.Button(historial_ventana, text="Eliminar", command=eliminar_registro).pack(pady=10)
-    tk.Button(historial_ventana, text="Guardar Historial", command=guardar_historial).pack(pady=10)
+    tk.Button(historial_ventana, text="Cerrar Historial", command=guardar_historial).pack(pady=10)
 
 def abrir_registro_productos():
     crear_interfaz_registro("Registro de Productos MercaDGL", productos, 420, 100)
@@ -280,3 +280,4 @@ tk.Button(frame_main, text="Registro de Productos", command=abrir_registro_produ
 tk.Button(frame_main, text="Registro de Ventas", command=abrir_registro_ventas).pack(pady=10)
 
 root.mainloop()
+
