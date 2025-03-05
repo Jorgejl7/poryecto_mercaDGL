@@ -59,6 +59,7 @@ def mostrar_imagen(file_path, entry_codigo, lbl_imagen_destino, entry_nombre):
         codigo = barcode[0].data.decode("utf-8")
         entry_codigo.delete(0, tk.END)
         entry_codigo.insert(0, codigo)
+        # Mover automáticamente el cursor al campo Nombre
         entry_nombre.focus()
 
 def guardar_datos(lista, entrys, lbl_imagen):
@@ -81,6 +82,9 @@ def guardar_datos(lista, entrys, lbl_imagen):
     for e in entrys:
         e.delete(0, tk.END)
     lbl_imagen.config(image="")
+    
+    # Enfocar automáticamente en el campo de Código de Barras
+    entrys[3].focus()
 
 def exportar_excel(lista):
     if not lista:
@@ -127,6 +131,10 @@ def on_codigo_ingresado(event, entry_codigo, entry_nombre):
     if codigo:
         entry_nombre.focus()
 
+def leer_codigo_barra(entry_codigo, entry_nombre):
+    entry_codigo.focus()
+    entry_codigo.bind("<Return>", lambda event: on_codigo_ingresado(event, entry_codigo, entry_nombre))
+    
 def crear_interfaz_registro(titulo, lista, x_offset, y_offset):
     ventana = tk.Toplevel(root)
     ventana.title(titulo)
@@ -144,7 +152,7 @@ def crear_interfaz_registro(titulo, lista, x_offset, y_offset):
         entry.grid(row=i, column=1, padx=10, pady=5)
         entrys.append(entry)
     
-    entrys[3].bind("<Return>", lambda event: on_codigo_ingresado(event, entrys[3], entrys[0]))
+    leer_codigo_barra(entrys[3], entrys[0])
     
     lbl_imagen = tk.Label(frame, bg="#e6f7ff")
     lbl_imagen.grid(row=5, column=0, columnspan=2, pady=10)
@@ -280,4 +288,3 @@ tk.Button(frame_main, text="Registro de Productos", command=abrir_registro_produ
 tk.Button(frame_main, text="Registro de Ventas", command=abrir_registro_ventas).pack(pady=10)
 
 root.mainloop()
-
