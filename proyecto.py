@@ -81,7 +81,6 @@ def guardar_datos(lista, entrys, lbl_imagen):
     for e in entrys:
         e.delete(0, tk.END)
     lbl_imagen.config(image="")
-    entrys[0].focus()
 
 def exportar_excel(lista):
     if not lista:
@@ -128,10 +127,10 @@ def on_codigo_ingresado(event, entry_codigo, entry_nombre):
     if codigo:
         entry_nombre.focus()
 
-def crear_interfaz_registro(titulo, lista):
+def crear_interfaz_registro(titulo, lista, x_offset, y_offset):
     ventana = tk.Toplevel(root)
     ventana.title(titulo)
-    ventana.geometry("400x500")
+    ventana.geometry(f"400x500+{x_offset}+{y_offset}")
     ventana.configure(bg="#e6f7ff")
     
     frame = tk.Frame(ventana, bg="#e6f7ff")
@@ -229,7 +228,7 @@ def mostrar_historial(lista, tipo="Productos"):
         if nueva_cantidad is None:
             return
         
-        nuevo_precio = simpledialog.askfloat("Modificar Precio", "Nuevo precio:", initialvalue=float(values[2][1:]))
+        nuevo_precio = simpledialog.askfloat("Modificar Precio", "Nuevo precio:", initialvalue=float(values[2][1:]))  # Aquí estaba el error
         if nuevo_precio is None:
             return
         
@@ -258,13 +257,14 @@ def mostrar_historial(lista, tipo="Productos"):
     tk.Button(historial_ventana, text="Modificar", command=modificar_registro).pack(pady=10)
     tk.Button(historial_ventana, text="Eliminar", command=eliminar_registro).pack(pady=10)
     tk.Button(historial_ventana, text="Guardar Historial", command=guardar_historial).pack(pady=10)
-    
+
 def abrir_registro_productos():
-    crear_interfaz_registro("Registro de Productos MercaDGL", productos)
+    crear_interfaz_registro("Registro de Productos MercaDGL", productos, 420, 100)
 
 def abrir_registro_ventas():
-    crear_interfaz_registro("Registro de Ventas MercaDGL", ventas)
+    crear_interfaz_registro("Registro de Ventas MercaDGL", ventas, 840, 100)
 
+# Inicializamos la ventana principal
 root = tk.Tk()
 root.title("MercaDGL")
 root.geometry("400x500")
@@ -280,4 +280,3 @@ tk.Button(frame_main, text="Registro de Productos", command=abrir_registro_produ
 tk.Button(frame_main, text="Registro de Ventas", command=abrir_registro_ventas).pack(pady=10)
 
 root.mainloop()
-
