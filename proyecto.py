@@ -218,53 +218,70 @@ def mostrar_historial(lista, tipo="Productos"):
 
     style_treeview()
 
-    def modificar_registro():
+    def modificar_registro(treeview, lista):
         selected_item = treeview.selection()
         if not selected_item:
             messagebox.showwarning("Advertencia", "Selecciona un registro para modificar.")
             return
-        
+    
         item = treeview.item(selected_item)
         values = item['values']
-        
+    
         # Solicitar nuevo nombre, cantidad y precio
         nuevo_nombre = simpledialog.askstring("Modificar Nombre", "Nuevo nombre del producto:", initialvalue=values[0])
         if not nuevo_nombre:
             return
-        
+    
         nueva_cantidad = simpledialog.askinteger("Modificar Cantidad", "Nueva cantidad:", initialvalue=int(values[1]))
         if nueva_cantidad is None:
             return
-        
+    
         nuevo_precio = simpledialog.askfloat("Modificar Precio", "Nuevo precio:", initialvalue=float(values[2][1:]))  
         if nuevo_precio is None:
             return
-        
-        lista[lista.index(values)] = [nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], values[4]]
-        treeview.item(selected_item, values=(nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], values[4]))
+    
+        nueva_fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+        # Actualizar la lista en memoria
+        for i, registro in enumerate(lista):
+            if registro[3] == values[3]:  # Comparar por código de barras para asegurar coincidencia
+                lista[i] = [nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], nueva_fecha]
+                break
+    
+        # Actualizar el Treeview
+        treeview.item(selected_item, values=(nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], nueva_fecha))
         messagebox.showinfo("Éxito", "Registro modificado correctamente.")
-
-    def eliminar_registro():
+    
+    def eliminar_registro(treeview, lista):
         selected_item = treeview.selection()
         if not selected_item:
             messagebox.showwarning("Advertencia", "Selecciona un registro para eliminar.")
             return
-        
+    
+        confirmacion = messagebox.askyesno("Confirmar eliminación", "¿Estás seguro de que deseas eliminar este registro?")
+        if not confirmacion:
+            return
+    
         item = treeview.item(selected_item)
         values = item['values']
-        lista.remove(values)
+    
+        # Eliminar de la lista en memoria
+        lista[:] = [registro for registro in lista if registro[3] != values[3]]  # Comparar por código de barras
+    
+        # Eliminar del Treeview
         treeview.delete(selected_item)
         messagebox.showinfo("Éxito", "Registro eliminado correctamente.")
-    
-    def guardar_historial():
+
+
+    def cerrar_historial():
         # Cambiado para que solo cierre la ventana sin eliminar o modificar nada
         historial_ventana.destroy()
     
     
     # Agregar botones de acción
-    tk.Button(historial_ventana, text="Modificar", command=modificar_registro).pack(pady=10)
-    tk.Button(historial_ventana, text="Eliminar", command=eliminar_registro).pack(pady=10)
-    tk.Button(historial_ventana, text="Cerrar Historial", command=guardar_historial).pack(pady=10)
+    tk.Button(historial_ventana, text="Modificar", command=lambda:modificar_registro(treeview,lista)).pack(pady=10)
+    tk.Button(historial_ventana, text="Eliminar", command=lambda:eliminar_registro(treeview,lista)).pack(pady=10)
+    tk.Button(historial_ventana, text="Cerrar Historial", command=cerrar_historial).pack(pady=10)
 
 def abrir_registro_productos():
     crear_interfaz_registro("Registro de Productos MercaDGL", productos, 420, 100)
