@@ -21,6 +21,8 @@ def capturar_imagen(entry_codigo, lbl_imagen_destino, entry_nombre):
         messagebox.showerror("Error", "No se pudo abrir la cámara.")
         return
 
+    cierre_manual = False  # Variable para controlar el cierre manual
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -29,21 +31,29 @@ def capturar_imagen(entry_codigo, lbl_imagen_destino, entry_nombre):
         barcode = decode(frame)
         for b in barcode:
             codigo_barras = b.data.decode("utf-8")
-            cap.release()
-            cv2.destroyAllWindows()
             entry_codigo.delete(0, tk.END)
             entry_codigo.insert(0, codigo_barras)
+
             file_path = "captura.jpg"
             cv2.imwrite(file_path, frame)
+
+            cap.release()
+            cv2.destroyAllWindows()
             mostrar_imagen(file_path, entry_codigo, lbl_imagen_destino, entry_nombre)
             return
         
-        cv2.imshow("Escanea el código de barras", frame)
+        cv2.imshow("Escanea el código de barras (Presiona ESC para salir)", frame)
+
+        # Si el usuario presiona ESC, cerramos la cámara
         if cv2.waitKey(1) & 0xFF == 27:
+            cierre_manual = True
             break
 
     cap.release()
     cv2.destroyAllWindows()
+
+    if cierre_manual:
+        messagebox.showinfo("Información", "La cámara se cerró manualmente.")
 
 def mostrar_imagen(file_path, entry_codigo, lbl_imagen_destino, entry_nombre):
     img = Image.open(file_path)
@@ -173,6 +183,8 @@ def mostrar_historial(lista, tipo="Productos"):
     historial_ventana.title(f"Historial de {tipo}")
     historial_ventana.geometry("800x500")
     historial_ventana.configure(bg="#f0f8ff")
+    historial_ventana.transient(root)
+    historial_ventana.focus_force()
     
     # Crear un frame para contener la tabla y los scrollbars
     frame_historial = tk.Frame(historial_ventana, bg="#f0f8ff")
@@ -223,35 +235,55 @@ def mostrar_historial(lista, tipo="Productos"):
         if not selected_item:
             messagebox.showwarning("Advertencia", "Selecciona un registro para modificar.")
             return
-    
+
         item = treeview.item(selected_item)
         values = item['values']
-    
-        # Solicitar nuevo nombre, cantidad y precio
-        nuevo_nombre = simpledialog.askstring("Modificar Nombre", "Nuevo nombre del producto:", initialvalue=values[0])
-        if not nuevo_nombre:
-            return
-    
-        nueva_cantidad = simpledialog.askinteger("Modificar Cantidad", "Nueva cantidad:", initialvalue=int(values[1]))
-        if nueva_cantidad is None:
-            return
-    
-        nuevo_precio = simpledialog.askfloat("Modificar Precio", "Nuevo precio:", initialvalue=float(values[2][1:]))  
-        if nuevo_precio is None:
-            return
-    
-        nueva_fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-        # Actualizar la lista en memoria
-        for i, registro in enumerate(lista):
-            if registro[3] == values[3]:  # Comparar por código de barras para asegurar coincidencia
-                lista[i] = [nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], nueva_fecha]
-                break
-    
-        # Actualizar el Treeview
-        treeview.item(selected_item, values=(nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], nueva_fecha))
-        messagebox.showinfo("Éxito", "Registro modificado correctamente.")
-    
+        ventana_modificar = tk.Toplevel()
+        ventana_modificar.title("Modificar Registro")
+        ventana_modificar.geometry("300x300")
+        ventana_modificar.configure(bg="#e6f7ff")
+        ventana_modificar.transient(historial_ventana)  # Evita que quede detrás
+        ventana_modificar.focus_force()  # Poner en primer plano
+
+        tk.Label(ventana_modificar, text="Nombre:").pack(pady=5)
+        entry_nombre = tk.Entry(ventana_modificar)
+        entry_nombre.pack(pady=5)
+        entry_nombre.insert(0, values[0])
+
+        tk.Label(ventana_modificar, text="Cantidad:").pack(pady=5)
+        entry_cantidad = tk.Entry(ventana_modificar)
+        entry_cantidad.pack(pady=5)
+        entry_cantidad.insert(0, values[1])
+
+        tk.Label(ventana_modificar, text="Precio:").pack(pady=5)
+        entry_precio = tk.Entry(ventana_modificar)
+        entry_precio.pack(pady=5)
+        entry_precio.insert(0, values[2][1:])  # Eliminar la "Q" antes de editar
+
+        def actualizar():
+            nuevo_nombre = entry_nombre.get()
+            try:
+                nueva_cantidad = int(entry_cantidad.get())
+                nuevo_precio = float(entry_precio.get())
+            except ValueError:
+                messagebox.showwarning("Advertencia", "Cantidad y precio deben ser números válidos.")
+                return
+
+            nueva_fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            for i, registro in enumerate(lista):
+                if registro[4] == values[4]:  # Comparar por código de barras
+                    lista[i] = [nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", nueva_fecha, values[4]]
+                    break
+
+            treeview.item(selected_item, values=(nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", nueva_fecha, values[4]))
+
+            messagebox.showinfo("Éxito", "Registro actualizado correctamente.")
+            ventana_modificar.destroy()
+
+        tk.Button(ventana_modificar, text="Actualizar", command=actualizar).pack(pady=10)
+        tk.Button(ventana_modificar, text="Cancelar", command=ventana_modificar.destroy).pack(pady=10)
+
     def eliminar_registro(treeview, lista):
         selected_item = treeview.selection()
         if not selected_item:
@@ -271,8 +303,6 @@ def mostrar_historial(lista, tipo="Productos"):
         # Eliminar del Treeview
         treeview.delete(selected_item)
         messagebox.showinfo("Éxito", "Registro eliminado correctamente.")
-
-
     def cerrar_historial():
         # Cambiado para que solo cierre la ventana sin eliminar o modificar nada
         historial_ventana.destroy()
@@ -284,10 +314,10 @@ def mostrar_historial(lista, tipo="Productos"):
     tk.Button(historial_ventana, text="Cerrar Historial", command=cerrar_historial).pack(pady=10)
 
 def abrir_registro_productos():
-    crear_interfaz_registro("Registro de Productos MercaDGL", productos, 420, 100)
+    crear_interfaz_registro("Registro de Productos MercaDGL", productos, 550, 100)
 
 def abrir_registro_ventas():
-    crear_interfaz_registro("Registro de Ventas MercaDGL", ventas, 840, 100)
+    crear_interfaz_registro("Registro de Ventas MercaDGL", ventas, 960, 100)
 
 # Inicializamos la ventana principal
 root = tk.Tk()
