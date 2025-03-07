@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, simpledialog  # Importar simpledialog
+from tkinter import filedialog, messagebox
 from tkinter import ttk
 from PIL import Image, ImageTk
 import cv2
@@ -230,6 +230,7 @@ def mostrar_historial(lista, tipo="Productos"):
 
     style_treeview()
 
+
     def modificar_registro(treeview, lista):
         selected_item = treeview.selection()
         if not selected_item:
@@ -238,51 +239,71 @@ def mostrar_historial(lista, tipo="Productos"):
 
         item = treeview.item(selected_item)
         values = item['values']
-        ventana_modificar = tk.Toplevel()
-        ventana_modificar.title("Modificar Registro")
-        ventana_modificar.geometry("300x300")
-        ventana_modificar.configure(bg="#e6f7ff")
-        ventana_modificar.transient(historial_ventana)  # Evita que quede detrás
-        ventana_modificar.focus_force()  # Poner en primer plano
 
-        tk.Label(ventana_modificar, text="Nombre:").pack(pady=5)
-        entry_nombre = tk.Entry(ventana_modificar)
-        entry_nombre.pack(pady=5)
-        entry_nombre.insert(0, values[0])
+        # Crear una ventana de modificación personalizada
+        ventana_modificacion = tk.Toplevel()
+        ventana_modificacion.title("Modificar Registro")
+        ventana_modificacion.geometry("400x300")
+        ventana_modificacion.configure(bg="#e6f7ff")
+        
+        # Etiquetas y campos de entrada
+        tk.Label(ventana_modificacion, text="Nuevo nombre del producto:").pack(pady=5)
+        nombre_entry = tk.Entry(ventana_modificacion)
+        nombre_entry.insert(0, values[0])
+        nombre_entry.pack(pady=5)
 
-        tk.Label(ventana_modificar, text="Cantidad:").pack(pady=5)
-        entry_cantidad = tk.Entry(ventana_modificar)
-        entry_cantidad.pack(pady=5)
-        entry_cantidad.insert(0, values[1])
+        tk.Label(ventana_modificacion, text="Nueva cantidad:").pack(pady=5)
+        cantidad_entry = tk.Entry(ventana_modificacion)
+        cantidad_entry.insert(0, values[1])
+        cantidad_entry.pack(pady=5)
 
-        tk.Label(ventana_modificar, text="Precio:").pack(pady=5)
-        entry_precio = tk.Entry(ventana_modificar)
-        entry_precio.pack(pady=5)
-        entry_precio.insert(0, values[2][1:])  # Eliminar la "Q" antes de editar
+        tk.Label(ventana_modificacion, text="Nuevo precio:").pack(pady=5)
+        precio_entry = tk.Entry(ventana_modificacion)
+        precio_entry.insert(0, values[2][1:])  # Q delante del precio, lo quitamos al insertar
+        precio_entry.pack(pady=5)
 
-        def actualizar():
-            nuevo_nombre = entry_nombre.get()
+        # Botón para confirmar los cambios
+        def confirmar_modificacion():
+            nuevo_nombre = nombre_entry.get()
+            if not nuevo_nombre:
+                messagebox.showwarning("Advertencia", "El nombre no puede estar vacío.")
+                return
+            
             try:
-                nueva_cantidad = int(entry_cantidad.get())
-                nuevo_precio = float(entry_precio.get())
+                nueva_cantidad = int(cantidad_entry.get())
             except ValueError:
-                messagebox.showwarning("Advertencia", "Cantidad y precio deben ser números válidos.")
+                messagebox.showwarning("Advertencia", "La cantidad debe ser un número.")
+                return
+
+            try:
+                nuevo_precio = float(precio_entry.get())
+            except ValueError:
+                messagebox.showwarning("Advertencia", "El precio debe ser un número.")
                 return
 
             nueva_fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+            # Actualizar la lista en memoria
             for i, registro in enumerate(lista):
-                if registro[4] == values[4]:  # Comparar por código de barras
-                    lista[i] = [nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", nueva_fecha, values[4]]
+                if registro[3] == values[3]:  # Comparar por código de barras para asegurar coincidencia
+                    lista[i] = [nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], nueva_fecha]
                     break
 
-            treeview.item(selected_item, values=(nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", nueva_fecha, values[4]))
+            # Actualizar el Treeview
+            treeview.item(selected_item, values=(nuevo_nombre, nueva_cantidad, f"Q{nuevo_precio}", values[3], nueva_fecha))
 
-            messagebox.showinfo("Éxito", "Registro actualizado correctamente.")
-            ventana_modificar.destroy()
+            # Cerrar la ventana de modificación
+            ventana_modificacion.destroy()
+            messagebox.showinfo("Éxito", "Registro modificado correctamente.")
 
-        tk.Button(ventana_modificar, text="Actualizar", command=actualizar).pack(pady=10)
-        tk.Button(ventana_modificar, text="Cancelar", command=ventana_modificar.destroy).pack(pady=10)
+        # Botón de confirmación
+        tk.Button(ventana_modificacion, text="Confirmar", command=confirmar_modificacion).pack(pady=20)
+
+        # Botón de cancelar
+        tk.Button(ventana_modificacion, text="Cancelar", command=ventana_modificacion.destroy).pack(pady=5)
+
+        # Mostrar la ventana
+        ventana_modificacion.mainloop()
 
     def eliminar_registro(treeview, lista):
         selected_item = treeview.selection()
